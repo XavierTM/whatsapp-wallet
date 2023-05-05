@@ -13,6 +13,7 @@ module.exports = class Account extends Model {
          phone: {
             type: DataTypes.STRING,
             allowNull: false,
+            unique: true,
          },
          account_number: {
             type: DataTypes.STRING,
