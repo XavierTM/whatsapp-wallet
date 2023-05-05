@@ -22,6 +22,7 @@ module.exports = class Account extends Model {
          balance: {
             type: DataTypes.DOUBLE,
             allowNull: false,
+            defaultValue: 0,
          },
       }, { sequelize })
    }
