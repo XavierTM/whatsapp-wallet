@@ -1,0 +1,16 @@
+{
+   "SmsMessageSid": "SMb706bc4ae4eccca0d6aaff10a483f32b",
+   "NumMedia": "0",
+   "ProfileName": "{{profile_name}}",
+   "SmsSid": "SMb706bc4ae4eccca0d6aaff10a483f32b",
+   "WaId": "{{wa_id}}",
+   "SmsStatus": "received",
+   "Body": "{{text}}",
+   "To": "whatsapp:+14155238886",
+   "NumSegments": "1",
+   "ReferralNumMedia": "0",
+   "MessageSid": "SMb706bc4ae4eccca0d6aaff10a483f32b",
+   "AccountSid": "ACc82528eda98c4de721d4425205823fab",
+   "From": "whatsapp:+{{wa_id}}",
+   "ApiVersion": "2010-04-01"
+}
