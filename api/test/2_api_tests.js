@@ -201,13 +201,13 @@ suite('API tests', function() {
       // create accounts
       const amount = casual.integer(10, 100);
 
-      const senderAccount = await Account.create({
+      let senderAccount = await Account.create({
          name: casual.name,
          phone: wa_id,
          balance: amount,
       });
 
-      const recipientAccount = await Account.create({
+      let recipientAccount = await Account.create({
          name: casual.name,
          phone: recipient_wa_id,
       });
@@ -215,7 +215,6 @@ suite('API tests', function() {
       // setup spies
       chai.spy.restore();
       chai.spy.on(whatsapp, 'send', () => {});
-      chai.spy.on(whatsapp, 'sendTemplateMessage', () => {});
 
       // initial message
       let notification = await createTextNotification({ profile_name, wa_id });
@@ -252,9 +251,17 @@ suite('API tests', function() {
 
       assert.equal(res.status, 200);
 
+      // Message to provide confirmation
+      notification = await createTextNotification({ profile_name, wa_id, text: 1 });
+
+      res = await requester
+         .post('/api/webhooks/whatsapp')
+         .send(notification);
+
+      assert.equal(res.status, 200);
+
       // spy reports
-      expect(whatsapp.send).to.have.been.called(4);
-      expect(whatsapp.sendTemplateMessage).to.have.been.called(1);
+      expect(whatsapp.send).to.have.been.called(6);
       
       // check db
       senderAccount = await Account.findByPk(senderAccount.id);

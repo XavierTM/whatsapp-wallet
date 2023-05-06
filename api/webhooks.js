@@ -61,18 +61,20 @@ webhooks.post('/paynow', async (req, res) => {
          const payment = await Payment.findByPk(id, { transaction });
 
          // update balance
-         await Account.increment('balance', {
-            by: payment.amount,
-            where: {
-               id: payment.account,
-            },
-            transaction,
-         });
-
+         const account = await Account.findByPk(payment.account, { transaction });
+         account.balance += payment.amount;
+         await account.save({ transaction });
+        
          // delete payment
-         await payment.destroy({ transaction })
+         await payment.destroy({ transaction });
 
+         // notify user
+         const text = `Your payment was successful. Your new balance is ${account.balance.toFixed(2)}`;
+         await whatsapp.send(account.phone, text);
+
+         // commit transaction
          await transaction.commit();
+         
          res.send();
 
       } catch (err) {

@@ -1,4 +1,4 @@
-<mxfile host="Electron" modified="2023-05-05T03:51:20.605Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.2.1 Chrome/112.0.5615.87 Electron/24.1.2 Safari/537.36" etag="2DwnP75DB9m-dvUuHmgy" version="21.2.1" type="device" pages="2">
+<mxfile host="Electron" modified="2023-05-05T03:59:19.877Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.2.1 Chrome/112.0.5615.87 Electron/24.1.2 Safari/537.36" etag="Nk1Xc3j6PFMydNw7VDIV" version="21.2.1" type="device" pages="2">
   <diagram name="Use case" id="yX-cnH5kckmRNkk6PQ5S">
     <mxGraphModel dx="2133" dy="894" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -63,7 +63,7 @@
         <mxCell id="Jad4Pd3kL8RgpmprJ0BL-1" value="Payment" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="400" y="170" width="160" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="Jad4Pd3kL8RgpmprJ0BL-2" value="- id INT (FK)&lt;br&gt;- amount FLOAT&lt;br&gt;- ref_code (UNQ)&lt;br&gt;- account INT (FK)" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" vertex="1" parent="Jad4Pd3kL8RgpmprJ0BL-1">
+        <mxCell id="Jad4Pd3kL8RgpmprJ0BL-2" value="- id INT (FK)&lt;br&gt;- amount FLOAT&lt;br&gt;- ref_code STRING (UNQ)&lt;br&gt;- account INT (FK)" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" vertex="1" parent="Jad4Pd3kL8RgpmprJ0BL-1">
           <mxGeometry y="30" width="160" height="90" as="geometry" />
         </mxCell>
       </root>

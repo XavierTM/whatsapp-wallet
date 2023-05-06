@@ -2,6 +2,8 @@ const capitalize = require("capitalize");
 const Account = require("./db/Account");
 const { Paynow } = require("paynow");
 const Payment = require("./db/Payment");
+const whatsapp = require("./whatsapp");
+const logger = require("./logger");
 
 
 const STATES = {
@@ -9,6 +11,9 @@ const STATES = {
    PROVIDING_NAME_FOR_REGISTRATION: 'providing-name-for-registration',
    PROVIDING_TOPUP_AMOUNT: 'providing-topup-amount',
    PROVIDING_MOBILE_WALLET: 'providing-mobile-wallet',
+   PROVIDING_RECIPIENT_WALLET: 'providing-recepient-wallet',
+   PROVIDING_TRANSFER_AMOUNT: 'providing-transfer-amount',
+   PROVIDING_TRANSFER_CONFIRMATION: 'providing-transfer-confirmation',
 }
 
 
@@ -126,23 +131,125 @@ async function walletProvisionResponse(phone, wallet, sessionData) {
 }
 
 
-async function menuSelectionResponse(phone, option, profileName) {
+async function transferRequestResponse() {
+   const text = 'Provide account number / or phone number of the person you want to send money to';
+   return [ STATES.PROVIDING_RECIPIENT_WALLET, text ]
+}
+
+
+function menuSelectionResponse(phone, option, profileName) {
 
 
    switch (option) {
       case "1":
-         return await balanceRequestResponse(phone);
+         return balanceRequestResponse(phone);
 
       case "2":
-         return await topupRequestResponse();
+         return topupRequestResponse();
 
       case "3":
-         return await transferRequestResponse()
+         return transferRequestResponse();
       
       default:
-         return await initialMessage(phone, profileName)
+         return initialMessage(phone, profileName)
 
    }
+
+}
+
+async function recipientProvisionResponse(wallet) {
+   
+   // validate
+   const where = {};
+
+   if (wallet.length === 6) {
+      where.wallet = wallet;
+   } else {
+      if (wallet[0] === '0')
+         wallet = wallet.replace('0', '263');
+      where.phone = wallet
+   }
+
+   const account = await Account.findOne({ where });
+
+   if (!account) {
+      return [
+         STATES.PROVIDING_RECIPIENT_WALLET,
+         `Invalid phone number or account number. Try again`
+      ]
+   }
+
+   return [
+      STATES.PROVIDING_TRANSFER_AMOUNT,
+      `How much money do you want to transfer?`,
+      { recipient: account.id }
+   ]
+}
+
+
+async function transferAmountProvisionResponse(phone, amount, sessionData) {
+
+   // validate amount
+   amount = parseFloat(amount) || 0
+
+   if (!amount) {
+      return [
+         STATES.PROVIDING_TRANSFER_AMOUNT,
+         'Please provide a valid amount'
+      ]
+   }
+
+   const senderAccount = await Account.findOne({ where: { phone }});
+
+   if (senderAccount.balance < amount) {
+      return [
+         STATES.PROVIDING_TRANSFER_AMOUNT,
+         `Insufficient funds. You can send up to *${senderAccount.balance.toFixed(2)}*. Try again`
+      ]
+   }
+
+   const recipientAccount = await Account.findOne({ where: { id: sessionData.recipient }});
+
+   return [
+      STATES.PROVIDING_TRANSFER_CONFIRMATION,
+      `Transferring *${amount.toFixed(2)}* to *${capitalize.words(recipientAccount.name)}*.\n\n1. Confirm\n2. Cancel`,
+      { amount }
+   ]
+
+}
+
+async function transferConfirmationProvisionResponse(phone, confirmation, sessionData) {
+
+   // check confirmation
+
+   if (confirmation !== "1") {
+      return [
+         undefined,
+         'You cancelled the transaction',
+      ]
+   }
+
+   // transfer
+   const senderAccount = await Account.findOne({ where: { phone }});
+   const { recipient, amount } = sessionData;
+   const recipientAccount = await Account.findByPk(recipient);
+
+   await recipientAccount.increment('balance', { by: amount });
+   await senderAccount.decrement('balance', { by: amount });
+
+   // notify receiver
+   const text = `You have received *${amount.toFixed(2)}* from *${capitalize.words(senderAccount.name)}*.  Your new balance is *${recipientAccount.balance.toFixed(2)}*`;
+
+   try {
+      await whatsapp.send(recipientAccount.phone, text);
+   } catch (err) {
+      logger.error(err);
+   }
+
+   return [
+      undefined,
+      `Successful transferred *${amount.toFixed(2)}* to *${capitalize.words(recipientAccount.name)}*. Your new balance is *${senderAccount.balance.toFixed(2)}*`
+   ]
 
 }
 
@@ -163,7 +270,16 @@ function processor(_, phone, state, payload, sessionData) {
 
       case STATES.PROVIDING_MOBILE_WALLET:
          return walletProvisionResponse(phone, message, sessionData)
-   
+      
+      case STATES.PROVIDING_RECIPIENT_WALLET:
+         return recipientProvisionResponse(message)  
+
+      case STATES.PROVIDING_TRANSFER_AMOUNT:
+         return transferAmountProvisionResponse(phone, message, sessionData)
+
+      case STATES.PROVIDING_TRANSFER_CONFIRMATION:
+         return transferConfirmationProvisionResponse(phone, message, sessionData)
+
       default:
          return initialMessage(phone, profileName)
    }
