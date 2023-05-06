@@ -8,6 +8,7 @@ const chaiSpies = require('chai-spies');
 const whatsapp = require("../whatsapp");
 const Account = require("../db/Account");
 const { Paynow } = require('paynow');
+const Payment = require("../db/Payment");
 
 chai.use(chaiSpies);
 
@@ -35,7 +36,7 @@ suite('API tests', function() {
       chai.spy.on(whatsapp, 'send', () => {});
 
       // initial message
-      let notification = createTextNotification({ profile_name, wa_id });
+      let notification = await createTextNotification({ profile_name, wa_id });
       let res = await requester
          .post('/api/webhooks/whatsapp')
          .send(notification);
@@ -44,7 +45,7 @@ suite('API tests', function() {
 
       // User's full name message
       const name = casual.name;
-      notification = createTextNotification({ profile_name, wa_id, text: name });
+      notification = await createTextNotification({ profile_name, wa_id, text: name });
 
       res = await requester
          .post('/api/webhooks/whatsapp')
@@ -82,15 +83,15 @@ suite('API tests', function() {
       chai.spy.on(Paynow.prototype, 'sendMobile', () => {});     
 
       // initial message
-      let notification = createTextNotification({ profile_name, wa_id });
+      let notification = await createTextNotification({ profile_name, wa_id });
       let res = await requester
          .post('/api/webhooks/whatsapp')
          .send(notification);
 
       assert.equal(res.status, 200);
 
-      // Message to select check balance option
-      notification = createTextNotification({ profile_name, wa_id, text: TOPUP_OPTION });
+      // Message to select topup option
+      notification = await createTextNotification({ profile_name, wa_id, text: TOPUP_OPTION });
 
       res = await requester
          .post('/api/webhooks/whatsapp')
@@ -100,7 +101,7 @@ suite('API tests', function() {
 
       // Message to provide amount 
       const amount = casual.integer(10, 100);
-      notification = createTextNotification({ profile_name, wa_id, text: amount });
+      notification = await createTextNotification({ profile_name, wa_id, text: amount });
 
       res = await requester
          .post('/api/webhooks/whatsapp')
@@ -109,7 +110,8 @@ suite('API tests', function() {
       assert.equal(res.status, 200);
 
       // Message to provide mobile wallet
-      notification = createTextNotification({ profile_name, wa_id, text: phoneNumber() });
+      const wallet = '077' + casual.integer(1000000, 9999999)
+      notification = await createTextNotification({ profile_name, wa_id, text: wallet });
 
       res = await requester
          .post('/api/webhooks/whatsapp')
@@ -118,12 +120,16 @@ suite('API tests', function() {
       assert.equal(res.status, 200);
 
       // send paynow webhook
+      const lastPayment = await getLastInserted(Payment);
+      const reference = lastPayment.id;
+
       const payload = {
          status: 'paid',
+         reference,
       }
 
       const paynow = new Paynow(process.env.PAYNOW_ID, process.env.PAYNOW_KEY);
-      payload.hash = paynow.generateHash(data, process.env.PAYNOW_KEY);
+      payload.hash = paynow.generateHash(payload, process.env.PAYNOW_KEY);
 
       res = await requester
          .post('/api/webhooks/paynow')
@@ -161,7 +167,7 @@ suite('API tests', function() {
       chai.spy.on(whatsapp, 'send', (..._args ) => args = _args);
 
       // initial message
-      let notification = createTextNotification({ profile_name, wa_id });
+      let notification = await createTextNotification({ profile_name, wa_id });
       let res = await requester
          .post('/api/webhooks/whatsapp')
          .send(notification);
@@ -169,7 +175,7 @@ suite('API tests', function() {
       assert.equal(res.status, 200);
 
       // Message to selct check baance option
-      notification = createTextNotification({ profile_name, wa_id, text: CHECK_BALANCE_OPTION });
+      notification = await createTextNotification({ profile_name, wa_id, text: CHECK_BALANCE_OPTION });
 
       res = await requester
          .post('/api/webhooks/whatsapp')
@@ -180,7 +186,8 @@ suite('API tests', function() {
       // spy reports
       expect(whatsapp.send).to.have.been.called(2);
       
-      const amount = account.amount.toFixed(2);
+      const amount = account.balance.toFixed(2);
+      const balanceMessage = args[1]
       assert.isAtLeast(balanceMessage.indexOf(amount), 0);
 
    });
@@ -211,7 +218,7 @@ suite('API tests', function() {
       chai.spy.on(whatsapp, 'sendTemplateMessage', () => {});
 
       // initial message
-      let notification = createTextNotification({ profile_name, wa_id });
+      let notification = await createTextNotification({ profile_name, wa_id });
       let res = await requester
          .post('/api/webhooks/whatsapp')
          .send(notification);
@@ -219,7 +226,7 @@ suite('API tests', function() {
       assert.equal(res.status, 200);
 
       // Message to select send money option
-      notification = createTextNotification({ profile_name, wa_id, text: SEND_OPTION });
+      notification = await createTextNotification({ profile_name, wa_id, text: SEND_OPTION });
 
       res = await requester
          .post('/api/webhooks/whatsapp')
@@ -228,7 +235,7 @@ suite('API tests', function() {
       assert.equal(res.status, 200);
 
       // Message to provide receiver account number
-      notification = createTextNotification({ profile_name, wa_id, text: recipient_wa_id });
+      notification = await createTextNotification({ profile_name, wa_id, text: recipient_wa_id });
 
       res = await requester
          .post('/api/webhooks/whatsapp')
@@ -237,7 +244,7 @@ suite('API tests', function() {
       assert.equal(res.status, 200);
 
       // Message to provide amount
-      notification = createTextNotification({ profile_name, wa_id, text: amount });
+      notification = await createTextNotification({ profile_name, wa_id, text: amount });
 
       res = await requester
          .post('/api/webhooks/whatsapp')

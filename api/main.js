@@ -7,7 +7,9 @@ require('./env');
 const express = require('express');
 const { init: initDB } = require('./db');
 const morgan = require('morgan');
-
+const webhooks = require('./webhooks');
+const Session = require('./Session');
+const processor = require('./processor');
 
 const app = express();
 
@@ -19,10 +21,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // routes
+app.use('/api/webhooks', webhooks);
 
 
 
 // initialization
+Session.setProcessor(processor);
+
 const PORT = process.env.PORT;
 
 initDB().then(() => {

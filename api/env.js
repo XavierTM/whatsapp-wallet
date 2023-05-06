@@ -18,6 +18,7 @@ const BASE_KEYS = [
    'TWILIO_ID',
    'TWILIO_KEY',
    'WA_ID',
+   'SYSTEM_URL'
 ];
 
 const CONDITIONAL_KEYS = [];

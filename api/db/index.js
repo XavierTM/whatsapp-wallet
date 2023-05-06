@@ -25,7 +25,7 @@ async function init() {
    
    // relationships
    /// Payment
-   Payment.belongsTo(Payment, {
+   Payment.belongsTo(Account, {
       foreignKey: {
          name: 'account',
          allowNull: false,
