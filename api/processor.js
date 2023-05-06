@@ -24,7 +24,7 @@ async function initialMessage(phone, profileName) {
    let newState, response
 
    if (account) {
-      response = `Hi *${profileName | capitalize.words(account.name)}*. What do you want to do today?\n\n1. Check your balance\n2. Topup account\n3. Transfer  money`;
+      response = `Hi *${profileName || capitalize.words(account.name)}*. What do you want to do today?\n\n1. Check your balance\n2. Topup account\n3. Transfer  money`;
       newState = STATES.MENU
    } else {
       response = `Hi *${profileName || 'User' }*. Let's create your account. Please provide your full legal name`;
@@ -47,14 +47,14 @@ async function nameProvisionResponse(phone, name) {
 
    const account = await Account.create({ name, phone });
 
-   const text = `You account has been created successfully.\n\n*Name*: ${capitalize.words(name)}\n*Account No*: ${account.account_no}\n*Balance*: 0`;
+   const text = `You account has been created successfully.\n\n*Name*: ${capitalize.words(name)}\n*Account No*: ${account.account_number}\n*Balance*: 0`;
    return [ undefined, text ]
 }
 
 
 async function balanceRequestResponse(phone) {
    const account = await Account.findOne({ where: { phone }})
-   const text = `*Name*: ${capitalize.words(account.name)}\n*Account No*: ${account.account_no}\n*Balance*: ${account.balance.toFixed(2)}`;
+   const text = `*Name*: ${capitalize.words(account.name)}\n*Account No*: ${account.account_number}\n*Balance*: ${account.balance.toFixed(2)}`;
    return [ undefined, text ]
 }
 
@@ -234,8 +234,11 @@ async function transferConfirmationProvisionResponse(phone, confirmation, sessio
    const { recipient, amount } = sessionData;
    const recipientAccount = await Account.findByPk(recipient);
 
-   await recipientAccount.increment('balance', { by: amount });
-   await senderAccount.decrement('balance', { by: amount });
+   recipientAccount.balance += amount;
+   await recipientAccount.save();
+
+   senderAccount.balance -= amount;
+   await senderAccount.save();
 
    // notify receiver
    const text = `You have received *${amount.toFixed(2)}* from *${capitalize.words(senderAccount.name)}*.  Your new balance is *${recipientAccount.balance.toFixed(2)}*`;
