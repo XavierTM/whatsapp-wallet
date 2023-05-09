@@ -27,7 +27,7 @@ async function initialMessage(phone, profileName) {
    let newState, response
 
    if (account) {
-      response = `Hi *${profileName || capitalize.words(account.name)}*. What do you want to do today?\n\n1. Check your balance\n2. Topup account\n3. Transfer  money\n4. Support`;
+      response = `Hi *${profileName || capitalize.words(account.name)}*. What do you want to do today?\n\n1. Check your balance\n2. Topup account\n3. Transfer  money\n4. Support session`;
       newState = STATES.MENU
    } else {
       response = `Hi *${profileName || 'User' }*. Let's create your account. Please provide your full legal name`;
@@ -141,7 +141,7 @@ async function transferRequestResponse() {
 
 function endSessionRequestResponse() {
    return [
-      STATES.PROVIDING_CONTINUE_CONFIRMATION,
+      undefined,
       "Your session has ended. Good bye",
    ];
 }
