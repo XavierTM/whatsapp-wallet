@@ -14,7 +14,10 @@ const STATES = {
    PROVIDING_RECIPIENT_WALLET: 'providing-recepient-wallet',
    PROVIDING_TRANSFER_AMOUNT: 'providing-transfer-amount',
    PROVIDING_TRANSFER_CONFIRMATION: 'providing-transfer-confirmation',
+   PROVIDING_CONTINUE_CONFIRMATION: 'providing-continuation-confirmation',
 }
+
+const CONTINUE_TEXT = '\n\n-----------------\nDo you want to do something else\n\n1. Yes\n2. No';
 
 
 async function initialMessage(phone, profileName) {
@@ -24,7 +27,7 @@ async function initialMessage(phone, profileName) {
    let newState, response
 
    if (account) {
-      response = `Hi *${profileName || capitalize.words(account.name)}*. What do you want to do today?\n\n1. Check your balance\n2. Topup account\n3. Transfer  money`;
+      response = `Hi *${profileName || capitalize.words(account.name)}*. What do you want to do today?\n\n1. Check your balance\n2. Topup account\n3. Transfer  money\n4. Support`;
       newState = STATES.MENU
    } else {
       response = `Hi *${profileName || 'User' }*. Let's create your account. Please provide your full legal name`;
@@ -47,15 +50,15 @@ async function nameProvisionResponse(phone, name) {
 
    const account = await Account.create({ name, phone });
 
-   const text = `You account has been created successfully.\n\n*Name*: ${capitalize.words(name)}\n*Account No*: ${account.account_number}\n*Balance*: 0`;
-   return [ undefined, text ]
+   const text = `Your account has been created successfully.\n\n*Name*: ${capitalize.words(name)}\n*Account No*: ${account.account_number}\n*Balance*: 0`;
+   return [ STATES.PROVIDING_CONTINUE_CONFIRMATION, text ]
 }
 
 
 async function balanceRequestResponse(phone) {
    const account = await Account.findOne({ where: { phone }})
    const text = `*Name*: ${capitalize.words(account.name)}\n*Account No*: ${account.account_number}\n*Balance*: ${account.balance.toFixed(2)}`;
-   return [ undefined, text ]
+   return [ STATES.PROVIDING_CONTINUE_CONFIRMATION, text ]
 }
 
 async function topupRequestResponse() {
@@ -125,7 +128,7 @@ async function walletProvisionResponse(phone, wallet, sessionData) {
    await paynow.sendMobile(payment, wallet, 'ecocash')
 
    return [
-      undefined,
+      STATES.PROVIDING_CONTINUE_CONFIRMATION,
       'Wait for the PIN prompt'
    ]
 }
@@ -134,6 +137,21 @@ async function walletProvisionResponse(phone, wallet, sessionData) {
 async function transferRequestResponse() {
    const text = 'Provide account number / or phone number of the person you want to send money to';
    return [ STATES.PROVIDING_RECIPIENT_WALLET, text ]
+}
+
+function endSessionRequestResponse() {
+   return [
+      STATES.PROVIDING_CONTINUE_CONFIRMATION,
+      "Your session has ended. Good bye",
+   ];
+}
+
+
+function supportContactRequestResponse() {
+   return [
+      STATES.PROVIDING_CONTINUE_CONFIRMATION,
+      'Contact the numbers below for support\n\n+263719228997\n+263715919598'
+   ]
 }
 
 
@@ -149,6 +167,9 @@ function menuSelectionResponse(phone, option, profileName) {
 
       case "3":
          return transferRequestResponse();
+
+      case "4":
+         return supportContactRequestResponse();
       
       default:
          return initialMessage(phone, profileName)
@@ -224,7 +245,7 @@ async function transferConfirmationProvisionResponse(phone, confirmation, sessio
 
    if (confirmation !== "1") {
       return [
-         undefined,
+         STATES.PROVIDING_CONTINUE_CONFIRMATION,
          'You cancelled the transaction',
       ]
    }
@@ -250,42 +271,75 @@ async function transferConfirmationProvisionResponse(phone, confirmation, sessio
    }
 
    return [
-      undefined,
+      STATES.PROVIDING_CONTINUE_CONFIRMATION,
       `Successful transferred *${amount.toFixed(2)}* to *${capitalize.words(recipientAccount.name)}*. Your new balance is *${senderAccount.balance.toFixed(2)}*`
    ]
 
 }
 
+function continuationConfirmationProvisionResponse(phone, message) {
 
-function processor(_, phone, state, payload, sessionData) {
+   if (message === '1') {
+      return menuSelectionResponse(phone, null)
+   }
+
+   return endSessionRequestResponse();
+}
+
+
+async function processor(_, phone, state, payload, sessionData) {
 
    const { message, profileName } = payload;
+   let result;
 
    switch (state) {
       case STATES.MENU:
-         return menuSelectionResponse(phone, message, profileName);
+         result = await menuSelectionResponse(phone, message, profileName);
+         break;
       
       case STATES.PROVIDING_NAME_FOR_REGISTRATION:
-         return nameProvisionResponse(phone, message)
+         result = await nameProvisionResponse(phone, message);
+         break;
 
       case STATES.PROVIDING_TOPUP_AMOUNT:
-         return topupAmountProvisionResponse(message);
+         result = await topupAmountProvisionResponse(message);
+         break;
 
       case STATES.PROVIDING_MOBILE_WALLET:
-         return walletProvisionResponse(phone, message, sessionData)
+         result = await walletProvisionResponse(phone, message, sessionData);
+         break;
       
       case STATES.PROVIDING_RECIPIENT_WALLET:
-         return recipientProvisionResponse(message)  
+         result = await recipientProvisionResponse(message)  
+         break;
 
       case STATES.PROVIDING_TRANSFER_AMOUNT:
-         return transferAmountProvisionResponse(phone, message, sessionData)
+         result = await transferAmountProvisionResponse(phone, message, sessionData)
+         break;
 
       case STATES.PROVIDING_TRANSFER_CONFIRMATION:
-         return transferConfirmationProvisionResponse(phone, message, sessionData)
+         result = await transferConfirmationProvisionResponse(phone, message, sessionData)
+         break;
+
+      case STATES.PROVIDING_CONTINUE_CONFIRMATION:
+         result = await continuationConfirmationProvisionResponse(phone, message);
+         break;
 
       default:
-         return initialMessage(phone, profileName)
+         result = await initialMessage(phone, profileName)
+         break;
    }
+
+
+
+   let [ newState, response, sessionDataUpdates  ] = result;
+
+   if (newState === STATES.PROVIDING_CONTINUE_CONFIRMATION)
+      response = `${response}${CONTINUE_TEXT}`;
+
+
+   return [ newState, response, sessionDataUpdates ];
+
 }
 
 

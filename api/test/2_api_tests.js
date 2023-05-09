@@ -9,6 +9,7 @@ const whatsapp = require("../whatsapp");
 const Account = require("../db/Account");
 const { Paynow } = require('paynow');
 const Payment = require("../db/Payment");
+const Session = require("../Session");
 
 chai.use(chaiSpies);
 
@@ -23,6 +24,10 @@ suite('API tests', function() {
 
    this.beforeAll(async () => {
       await waitForServer();
+   });
+
+   this.beforeEach(() => {
+      Session.clearSessions();
    });
 
 

@@ -4,7 +4,7 @@ class Session {
 
    static _sessions = new Map();
 
-   static _generateOneIdentifier(providerId, consumerId) {
+   static _generateOneIdentifier(providerId='', consumerId='') {
       return `${providerId}__${consumerId}`
    }
 
@@ -26,6 +26,19 @@ class Session {
 
       return session;
    }
+
+   /**
+    * Remove all sessions
+    */
+   static clearSessions() {
+      this._sessions.clear();
+   }
+
+   static deleteSession(providerId, consumerId) {
+      const key = this._generateOneIdentifier(providerId, consumerId)
+      this._sessions.delete(key);
+   }
+
 
    /**
     * @param {Function} processor A function that accepts providerId, consumerId, state, the message, and session data. It then returns the the new state and the response in this format: [ newState, response, sessionDataUpdates ]
@@ -62,6 +75,7 @@ class Session {
    getState() {
       return this._state;
    }
+   
 
    /**
     * @param {String} providerId Service provider identifier
@@ -83,6 +97,10 @@ class Session {
       const [ newState, response, sessionDataUpdates ] = await processor(providerId, consumerId, state, payload, session._sessionData);
       session._updateSessionData(sessionDataUpdates);
       session.setState(newState);
+
+      if (!newState)
+         this.deleteSession(providerId, consumerId);
+
 
       return response;
       
