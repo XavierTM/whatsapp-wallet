@@ -291,7 +291,7 @@ async function processor(_, phone, state, payload, sessionData) {
    const { message, profileName } = payload;
    let result;
 
-   if (payload === '.cancel') {
+   if (message === '.cancel') {
       result = [
          STATES.PROVIDING_CONTINUE_CONFIRMATION,
          'You cancelled your request.'
