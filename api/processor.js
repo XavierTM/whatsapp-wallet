@@ -27,7 +27,7 @@ async function initialMessage(phone, profileName) {
    let newState, response
 
    if (account) {
-      response = `Hi *${profileName || capitalize.words(account.name)}*. What do you want to do today?\n\n1. Check your balance\n2. Topup account\n3. Transfer  money\n4. Support session`;
+      response = `Hi *${profileName || capitalize.words(account.name)}*. What do you want to do today?\n\n1. Check your balance\n2. Topup account\n3. Transfer  money\n4. Support session.\n\nYou can cancel your request at any point by sending *.cancel*`;
       newState = STATES.MENU
    } else {
       response = `Hi *${profileName || 'User' }*. Let's create your account. Please provide your full legal name`;
@@ -156,7 +156,6 @@ function supportContactRequestResponse() {
 
 
 function menuSelectionResponse(phone, option, profileName) {
-
 
    switch (option) {
       case "1":
@@ -292,43 +291,52 @@ async function processor(_, phone, state, payload, sessionData) {
    const { message, profileName } = payload;
    let result;
 
-   switch (state) {
-      case STATES.MENU:
-         result = await menuSelectionResponse(phone, message, profileName);
-         break;
-      
-      case STATES.PROVIDING_NAME_FOR_REGISTRATION:
-         result = await nameProvisionResponse(phone, message);
-         break;
-
-      case STATES.PROVIDING_TOPUP_AMOUNT:
-         result = await topupAmountProvisionResponse(message);
-         break;
-
-      case STATES.PROVIDING_MOBILE_WALLET:
-         result = await walletProvisionResponse(phone, message, sessionData);
-         break;
-      
-      case STATES.PROVIDING_RECIPIENT_WALLET:
-         result = await recipientProvisionResponse(message)  
-         break;
-
-      case STATES.PROVIDING_TRANSFER_AMOUNT:
-         result = await transferAmountProvisionResponse(phone, message, sessionData)
-         break;
-
-      case STATES.PROVIDING_TRANSFER_CONFIRMATION:
-         result = await transferConfirmationProvisionResponse(phone, message, sessionData)
-         break;
-
-      case STATES.PROVIDING_CONTINUE_CONFIRMATION:
-         result = await continuationConfirmationProvisionResponse(phone, message);
-         break;
-
-      default:
-         result = await initialMessage(phone, profileName)
-         break;
+   if (payload === '.cancel') {
+      result = [
+         STATES.PROVIDING_CONTINUE_CONFIRMATION,
+         'You cancelled your request.'
+      ]
+   } else {
+      switch (state) {
+         case STATES.MENU:
+            result = await menuSelectionResponse(phone, message, profileName);
+            break;
+         
+         case STATES.PROVIDING_NAME_FOR_REGISTRATION:
+            result = await nameProvisionResponse(phone, message);
+            break;
+   
+         case STATES.PROVIDING_TOPUP_AMOUNT:
+            result = await topupAmountProvisionResponse(message);
+            break;
+   
+         case STATES.PROVIDING_MOBILE_WALLET:
+            result = await walletProvisionResponse(phone, message, sessionData);
+            break;
+         
+         case STATES.PROVIDING_RECIPIENT_WALLET:
+            result = await recipientProvisionResponse(message)  
+            break;
+   
+         case STATES.PROVIDING_TRANSFER_AMOUNT:
+            result = await transferAmountProvisionResponse(phone, message, sessionData)
+            break;
+   
+         case STATES.PROVIDING_TRANSFER_CONFIRMATION:
+            result = await transferConfirmationProvisionResponse(phone, message, sessionData)
+            break;
+   
+         case STATES.PROVIDING_CONTINUE_CONFIRMATION:
+            result = await continuationConfirmationProvisionResponse(phone, message);
+            break;
+   
+         default:
+            result = await initialMessage(phone, profileName)
+            break;
+      }
    }
+
+   
 
 
 
